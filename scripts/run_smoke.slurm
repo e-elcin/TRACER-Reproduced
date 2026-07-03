@@ -19,6 +19,8 @@ export HF_HOME=/dl_scratch2/ege/hf_cache
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
+export LITELLM_LOG=CRITICAL
+
 vllm serve Qwen/Qwen2.5-32B-Instruct-GPTQ-Int4 \
   --served-model-name qwen --port 8000 \
   --enable-auto-tool-choice --tool-call-parser hermes \
