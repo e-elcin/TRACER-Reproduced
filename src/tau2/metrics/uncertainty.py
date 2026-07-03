@@ -22,15 +22,20 @@ import numpy as np
 from loguru import logger
 from pydantic import BaseModel
 
-# Vertex AI imports for embeddings
+# Local sentence-transformers embeddings (offline-friendly, no cloud API)
 try:
-    import vertexai
-    from vertexai.language_models import TextEmbeddingModel
-    VERTEX_AI_AVAILABLE = True
+    from sentence_transformers import SentenceTransformer
+    EMBEDDINGS_AVAILABLE = True
 except ImportError:
-    VERTEX_AI_AVAILABLE = False
-    logger.warning("Vertex AI not available. Semantic distance metrics will be disabled.")
+    EMBEDDINGS_AVAILABLE = False
+    logger.warning("sentence-transformers not available. Semantic distance metrics will be disabled.")
 
+# Default embedding model. all-mpnet-base-v2 is 768-dim (same as the original
+# Vertex text-embedding-004) and a strong general-purpose semantic encoder.
+# Override with TRACER_EMBED_MODEL to test embedding sensitivity.
+_DEFAULT_EMBED_MODEL = os.getenv(
+    "TRACER_EMBED_MODEL", "sentence-transformers/all-mpnet-base-v2"
+)
 
 class TokenUncertainty(BaseModel):
     """Token-level uncertainty information."""
@@ -322,85 +327,81 @@ def get_uncertainty_stats(logprobs_object: Optional[dict]) -> UncertaintyStats:
 # Semantic Distance Metrics (TRACER Situational Awareness Layer)
 # ============================================================================
 
-
 class EmbeddingService:
     """
-    Singleton service for managing Vertex AI text embeddings.
-    
-    Loads the embedding model once and reuses it for all semantic distance
-    calculations during simulation.
+    Singleton service for local sentence-transformers embeddings.
+
+    Loads the embedding model once (from the local HuggingFace cache) and reuses
+    it for all semantic distance calculations. Runs fully offline: no cloud API,
+    so it works on air-gapped compute nodes.
     """
-    
+
     _instance: Optional['EmbeddingService'] = None
-    _model: Optional['TextEmbeddingModel'] = None
+    _model = None
     _initialized: bool = False
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-    
+
     def __init__(self):
         """Initialize the embedding service (only once)."""
-        if not self._initialized and VERTEX_AI_AVAILABLE:
+        if not self._initialized and EMBEDDINGS_AVAILABLE:
             try:
-                # Initialize Vertex AI (auto-detects project from environment)
-                # User should have GOOGLE_APPLICATION_CREDENTIALS or gcloud auth set up
-                project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-                if project_id:
-                    vertexai.init(project=project_id)
-                else:
-                    # Try default initialization
-                    vertexai.init()
-                
-                # Load the embedding model
-                # Using text-embedding-004 (latest, 768 dimensions)
-                self._model = TextEmbeddingModel.from_pretrained("text-embedding-004")
+                model_name = _DEFAULT_EMBED_MODEL
+                # Prefer GPU when present, else CPU.
+                try:
+                    import torch
+                    device = "cuda" if torch.cuda.is_available() else "cpu"
+                except ImportError:
+                    device = "cpu"
+                self._model = SentenceTransformer(model_name, device=device)
                 self._initialized = True
-                logger.info("✓ Vertex AI embedding service initialized successfully")
+                logger.info(
+                    f"✓ Local embedding service initialized: {model_name} on {device}"
+                )
             except Exception as e:
-                logger.warning(f"Failed to initialize Vertex AI embeddings: {e}")
+                logger.warning(f"Failed to initialize local embeddings: {e}")
                 self._model = None
                 self._initialized = False
-    
+
     def get_embedding(self, text: str) -> Optional[np.ndarray]:
         """
         Generate embedding for a text string.
-        
+
         Args:
             text: Input text to embed
-            
+
         Returns:
             Embedding vector as numpy array, or None if service unavailable
         """
         if not self._initialized or self._model is None:
             return None
-        
+
         if not text or not text.strip():
             return None
-        
+
         try:
-            # Truncate text if too long (model limit is ~20k tokens)
-            # Keep approximately 15k tokens worth of text
+            # Truncate over-long text (keep most recent content).
             max_chars = 60000
             if len(text) > max_chars:
-                text = text[-max_chars:]  # Keep most recent content
+                text = text[-max_chars:]
                 logger.debug(f"Truncated text from {len(text)} to {max_chars} chars")
-            
-            # Get embeddings
-            embeddings = self._model.get_embeddings([text])
-            if embeddings and len(embeddings) > 0:
-                # Convert to numpy array
-                return np.array(embeddings[0].values)
-            return None
+
+            # Return raw (un-normalized) vectors; calculate_semantic_distance
+            # normalizes and computes 1 - cosine itself, matching prior behavior.
+            emb = self._model.encode(
+                text, convert_to_numpy=True, normalize_embeddings=False
+            )
+            return np.asarray(emb)
         except Exception as e:
             logger.error(f"Error generating embedding: {e}")
             return None
-    
+
     def is_available(self) -> bool:
         """Check if the embedding service is available."""
         return self._initialized and self._model is not None
-
 
 def calculate_semantic_distance(text_a: str, text_b: str) -> float:
     """

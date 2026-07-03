@@ -30,6 +30,7 @@ dependencies = [
     "loguru>=0.7.3",
     "docstring-parser>=0.16",
     "litellm>=1.65.0",
+    "sentence-transformers>=2.2.0",
     "tenacity>=9.0.0",
     "matplotlib>=3.10.1",
     "seaborn>=0.13.2",
