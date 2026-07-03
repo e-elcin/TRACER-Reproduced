@@ -11,13 +11,17 @@ logs/
 figures/
 data/ablation/
 data/simulations/
+data/tau2/simulations/
 data/uncertainty/
+data/tau2/uncertainty/
 data/optimization/
 data/datasets/
 data/models/
 data/analyses/
 src/experiments/model_serving/vllm_serving/.*
 .ruff_cache
+
+!results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
