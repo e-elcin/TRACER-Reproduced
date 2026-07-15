@@ -1,0 +1,51 @@
+
+Loading data from: data/simulations/qwen14B-int4_retail_50runs.json
+Loaded 45 simulations
+
+🔬 Running Diagnostic Analysis
+Computing trajectory-level correlations (mean aggregation per simulation)
+
+
+Table 1: Component Correlation with Task Failure
+Trajectory-level point-biserial correlations (components aggregated per simulation)
+Note: Weak linear correlations are expected when non-linear combination (MAX) is used
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Component                      ┃    Correlation (r) ┃     Effect Size ┃ Interpretation       ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ U_i (Normalized Entropy)       │            -0.0277 │          0.1868 │ Weak                 │
+│ Da (Inquiry Drift)             │            +0.1029 │              -- │ Moderate             │
+│ Do (Agent Coherence)           │            -0.0469 │              -- │ Weak                 │
+│ Do (User Coherence)            │            -0.0053 │          0.0661 │ Weak                 │
+└────────────────────────────────┴────────────────────┴─────────────────┴──────────────────────┘
+
+Table 1b: Individual Component Discrimination (AUROC)
+Failure prediction performance using each component alone (trajectory-level mean)
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Component                      ┃       AUROC (Solo) ┃ Interpretation       ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ U_i (Normalized Entropy)       │             0.4764 │ Poor                 │
+│ Da (Inquiry Drift)             │             0.5777 │ Weak                 │
+│ Do (Agent Coherence)           │             0.4527 │ Poor                 │
+│ Do (User Coherence)            │             0.4932 │ Poor                 │
+└────────────────────────────────┴────────────────────┴──────────────────────┘
+
+Dataset Statistics:
+  Total samples: 45
+  Failures: 37 (82.2%)
+  Successes: 8 (17.8%)
+
+💡 Key Findings for Ablation Study:
+  Component Ranking (by correlation strength):
+    1. Da: +0.1029
+    2. Do_agent: -0.0469
+    3. U_i: -0.0277
+    4. Do_user: -0.0053
+
+  Key Insights:
+  • All individual components show weak discrimination (AUROC < 0.60)
+  • Weak linear correlations suggest non-linear combination is key
+    → TRACER's MAX/multiplicative formulas can capture non-linear patterns
+
+✓ Diagnostic analysis complete!

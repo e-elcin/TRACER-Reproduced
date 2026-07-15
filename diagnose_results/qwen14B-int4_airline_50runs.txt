@@ -1,0 +1,50 @@
+
+Loading data from: data/simulations/qwen14B-int4_airline_50runs.json
+Loaded 47 simulations
+
+🔬 Running Diagnostic Analysis
+Computing trajectory-level correlations (mean aggregation per simulation)
+
+
+Table 1: Component Correlation with Task Failure
+Trajectory-level point-biserial correlations (components aggregated per simulation)
+Note: Weak linear correlations are expected when non-linear combination (MAX) is used
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Component                      ┃    Correlation (r) ┃     Effect Size ┃ Interpretation       ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ U_i (Normalized Entropy)       │            -0.4984 │          1.6619 │ Strong               │
+│ Da (Inquiry Drift)             │            +0.0547 │              -- │ Weak                 │
+│ Do (Agent Coherence)           │            +0.1385 │              -- │ Moderate             │
+│ Do (User Coherence)            │            +0.1585 │          0.1506 │ Moderate             │
+└────────────────────────────────┴────────────────────┴─────────────────┴──────────────────────┘
+
+Table 1b: Individual Component Discrimination (AUROC)
+Failure prediction performance using each component alone (trajectory-level mean)
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Component                      ┃       AUROC (Solo) ┃ Interpretation       ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ U_i (Normalized Entropy)       │             0.1476 │ Poor                 │
+│ Da (Inquiry Drift)             │             0.5381 │ Poor                 │
+│ Do (Agent Coherence)           │             0.5643 │ Weak                 │
+│ Do (User Coherence)            │             0.6143 │ Moderate             │
+└────────────────────────────────┴────────────────────┴──────────────────────┘
+
+Dataset Statistics:
+  Total samples: 47
+  Failures: 35 (74.5%)
+  Successes: 12 (25.5%)
+
+💡 Key Findings for Ablation Study:
+  Component Ranking (by correlation strength):
+    1. U_i: -0.4984
+    2. Do_user: +0.1585
+    3. Do_agent: +0.1385
+    4. Da: +0.0547
+
+  Key Insights:
+  • Best individual component: Do_user (AUROC=0.6143)
+  ✓ Multi-component design justified: Both U_i and penalties show signal
+
+✓ Diagnostic analysis complete!

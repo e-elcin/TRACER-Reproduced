@@ -1,0 +1,126 @@
+{
+  "metadata": {
+    "input_file": "/dl_scratch2/ege/elcin/TRACER-Reproduced/data/simulations/2026-07-03T20:27:28.643121_retail_llm_agent_qwen_user_simulator_qwen.json",
+    "total_simulations": 20,
+    "num_failures": 10,
+    "num_successes": 10,
+    "failure_rate": 0.5
+  },
+  "table_1_component_correlations": {
+    "description": "Trajectory-level point-biserial correlation between uncertainty components and task failure (components aggregated per simulation using mean)",
+    "components": [
+      {
+        "name": "U_i (Normalized Entropy)",
+        "correlation": 0.26628674032088234,
+        "auroc_solo": 0.65,
+        "effect_size": 0.5606992431159946,
+        "mean_failures": 0.0962458600104051,
+        "mean_successes": 0.08620864965926459
+      },
+      {
+        "name": "Da (Inquiry Drift)",
+        "correlation": 0.02572315681864843,
+        "auroc_solo": 0.48,
+        "effect_size": null,
+        "mean_failures": 0.19688247794084088,
+        "mean_successes": 0.1703214628165551
+      },
+      {
+        "name": "Do_agent (Agent Coherence)",
+        "correlation": -0.006961954594944731,
+        "auroc_solo": 0.45999999999999996,
+        "effect_size": null,
+        "mean_failures": null,
+        "mean_successes": null
+      },
+      {
+        "name": "Do_user (User Coherence)",
+        "correlation": 0.0,
+        "auroc_solo": 0.5,
+        "effect_size": 0.014603419263028376,
+        "mean_failures": null,
+        "mean_successes": null
+      }
+    ],
+    "component_ranking": [
+      {
+        "component": "U_i",
+        "correlation": 0.26628674032088234,
+        "effect_size": 0.5606992431159946
+      },
+      {
+        "component": "Da",
+        "correlation": 0.02572315681864843,
+        "effect_size": null
+      },
+      {
+        "component": "Do_agent",
+        "correlation": -0.006961954594944731,
+        "effect_size": null
+      },
+      {
+        "component": "Do_user",
+        "correlation": 0.0,
+        "effect_size": 0.014603419263028376
+      }
+    ]
+  },
+  "table_2_variant_comparison": {
+    "description": "Performance comparison of TRACER formulation variants",
+    "variants": [
+      {
+        "name": "additive",
+        "auroc": 0.81,
+        "config": {
+          "alpha": 0.0,
+          "beta": 1.0,
+          "gamma": 0.0,
+          "top_k_percentile": 0.15,
+          "ensemble_weight_max": 0.3
+        }
+      },
+      {
+        "name": "multiplicative",
+        "auroc": 0.77,
+        "config": {
+          "alpha": 2.0,
+          "beta": 6.0,
+          "gamma": 0.0,
+          "top_k_percentile": 1.0,
+          "ensemble_weight_max": 0.2
+        }
+      },
+      {
+        "name": "separate",
+        "auroc": 0.73,
+        "config": {
+          "alpha": 1.0,
+          "beta": 3.0,
+          "gamma": 2.0,
+          "top_k_percentile": 1.0,
+          "ensemble_weight_max": 0.1
+        }
+      },
+      {
+        "name": "max",
+        "auroc": 0.68,
+        "config": {
+          "alpha": 3.0,
+          "beta": 2.0,
+          "gamma": 6.0,
+          "top_k_percentile": 1.0,
+          "ensemble_weight_max": 0.1
+        }
+      }
+    ]
+  },
+  "best_variant": "additive",
+  "best_auroc": 0.81,
+  "best_config": {
+    "alpha": 0.0,
+    "beta": 1.0,
+    "gamma": 0.0,
+    "top_k_percentile": 0.15,
+    "ensemble_weight_max": 0.3
+  }
+}
