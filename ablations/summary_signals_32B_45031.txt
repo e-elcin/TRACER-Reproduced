@@ -1,0 +1,103 @@
+
+==============================================================================
+CELL: qwen32B-int4_retail_50runs
+==============================================================================
+
+[G1] no surprisal CSVs found — check Phase 2/3 in the slurm log.
+
+[G2] EMBEDDER — same formulas, different geometry
+  bge-m3 d_a_sem               AUROC=0.581  95% CI [0.425, 0.731]  spans 0.5
+  bge-m3 d_a_lex               AUROC=0.532  95% CI [0.368, 0.694]  spans 0.5
+  bge-m3 d_a_gated             AUROC=0.473  95% CI [0.348, 0.599]  spans 0.5
+  bge-m3 d_oA                  AUROC=0.358  95% CI [0.208, 0.517]  spans 0.5
+  bge-m3 d_oU                  AUROC=0.519  95% CI [0.341, 0.685]  spans 0.5
+
+  qwen3-emb d_a_sem            AUROC=0.619  95% CI [0.447, 0.773]  spans 0.5
+  qwen3-emb d_a_lex            AUROC=0.532  95% CI [0.368, 0.694]  spans 0.5
+  qwen3-emb d_a_gated          AUROC=0.486  95% CI [0.373, 0.594]  spans 0.5
+  qwen3-emb d_oA               AUROC=0.452  95% CI [0.294, 0.623]  spans 0.5
+  qwen3-emb d_oU               AUROC=0.470  95% CI [0.297, 0.629]  spans 0.5
+
+  VERDICT: findings that flip sign between embedders are geometry,
+           not behaviour, and cannot be reported as TRACER properties.
+
+[G3/G4] AGENT-COHERENCE GAP — is D_o^A semantics or format?
+  raw              mean=0.4554 std=0.0752 range=[0.3259, 0.5650]
+    raw AUROC                  AUROC=0.358  95% CI [0.208, 0.517]  spans 0.5
+  verbalized obs   mean=0.4215 std=0.0813 range=[0.2919, 0.5604]
+    verbalized obs AUROC       AUROC=0.465  95% CI [0.304, 0.622]  spans 0.5
+  calibrated       mean=-0.0410 std=0.0709 range=[-0.1578, 0.0758]
+    calibrated AUROC           AUROC=0.476  95% CI [0.315, 0.635]  spans 0.5
+
+  VERDICT: if raw D_o^A is pinned near its ceiling with tiny std while the
+           calibrated version has real spread, the raw signal was measuring
+           NL-vs-JSON distance, and that is the report's finding.
+
+==============================================================================
+CELL: qwen32B-int4_telecom_50runs
+==============================================================================
+
+[G1] no surprisal CSVs found — check Phase 2/3 in the slurm log.
+
+[G2] EMBEDDER — same formulas, different geometry
+  bge-m3 d_a_sem               AUROC=0.499  95% CI [0.304, 0.696]  spans 0.5
+  bge-m3 d_a_lex               AUROC=0.553  95% CI [0.378, 0.718]  spans 0.5
+  bge-m3 d_a_gated             AUROC=0.501  95% CI [0.425, 0.565]  spans 0.5
+  bge-m3 d_oA                  AUROC=0.658  95% CI [0.456, 0.842]  spans 0.5
+  bge-m3 d_oU                  AUROC=0.529  95% CI [0.362, 0.694]  spans 0.5
+
+  qwen3-emb d_a_sem            AUROC=0.531  95% CI [0.333, 0.717]  spans 0.5
+  qwen3-emb d_a_lex            AUROC=0.553  95% CI [0.378, 0.718]  spans 0.5
+  qwen3-emb d_a_gated          AUROC=0.501  95% CI [0.425, 0.565]  spans 0.5
+  qwen3-emb d_oA               AUROC=0.642  95% CI [0.456, 0.813]  spans 0.5
+  qwen3-emb d_oU               AUROC=0.405  95% CI [0.233, 0.588]  spans 0.5
+
+  VERDICT: findings that flip sign between embedders are geometry,
+           not behaviour, and cannot be reported as TRACER properties.
+
+[G3/G4] AGENT-COHERENCE GAP — is D_o^A semantics or format?
+  raw              mean=0.3887 std=0.0752 range=[0.2752, 0.5274]
+    raw AUROC                  AUROC=0.658  95% CI [0.456, 0.842]  spans 0.5
+  verbalized obs   mean=0.3850 std=0.0744 range=[0.2752, 0.5274]
+    verbalized obs AUROC       AUROC=0.672  95% CI [0.467, 0.849]  spans 0.5
+  calibrated       mean=-0.1048 std=0.0804 range=[-0.2328, 0.0186]
+    calibrated AUROC           AUROC=0.533  95% CI [0.367, 0.713]  spans 0.5
+
+  VERDICT: if raw D_o^A is pinned near its ceiling with tiny std while the
+           calibrated version has real spread, the raw signal was measuring
+           NL-vs-JSON distance, and that is the report's finding.
+
+==============================================================================
+CELL: qwen32B-int4_airline_50runs
+==============================================================================
+
+[G1] no surprisal CSVs found — check Phase 2/3 in the slurm log.
+
+[G2] EMBEDDER — same formulas, different geometry
+  bge-m3 d_a_sem               AUROC=0.555  95% CI [0.362, 0.737]  spans 0.5
+  bge-m3 d_a_lex               AUROC=0.484  95% CI [0.312, 0.655]  spans 0.5
+  bge-m3 d_a_gated             AUROC=0.532  95% CI [0.386, 0.668]  spans 0.5
+  bge-m3 d_oA                  AUROC=0.473  95% CI [0.251, 0.700]  spans 0.5
+  bge-m3 d_oU                  AUROC=0.586  95% CI [0.385, 0.766]  spans 0.5
+
+  qwen3-emb: MISSING
+  VERDICT: findings that flip sign between embedders are geometry,
+           not behaviour, and cannot be reported as TRACER properties.
+
+[G3/G4] AGENT-COHERENCE GAP — is D_o^A semantics or format?
+  raw              mean=0.4416 std=0.1107 range=[0.2583, 0.5878]
+    raw AUROC                  AUROC=0.473  95% CI [0.251, 0.700]  spans 0.5
+  verbalized obs   mean=0.3982 std=0.1001 range=[0.2607, 0.5620]
+    verbalized obs AUROC       AUROC=0.412  95% CI [0.207, 0.631]  spans 0.5
+  calibrated       mean=-0.0340 std=0.1059 range=[-0.1996, 0.1372]
+    calibrated AUROC           AUROC=0.469  95% CI [0.247, 0.681]  spans 0.5
+
+  VERDICT: if raw D_o^A is pinned near its ceiling with tiny std while the
+           calibrated version has real spread, the raw signal was measuring
+           NL-vs-JSON distance, and that is the report's finding.
+
+==============================================================================
+Reminder: these are confound checks, not the headline result. They say
+whether each signal's behaviour is real; they do not say why it is real.
+The loop-hypothesis test (U_t vs D_a correlation) is a separate CPU job.
+==============================================================================
