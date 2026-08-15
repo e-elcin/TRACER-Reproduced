@@ -105,6 +105,16 @@ def main():
 
     print(f"[{args.variant}|{os.path.basename(args.embed_model)}] {args.cell}", flush=True)
     model = SentenceTransformer(args.embed_model, trust_remote_code=True)
+    # Cap sequence length. bge-m3 self-caps at 8192, but Qwen3-Embedding has a
+    # very long context window and does NOT truncate by default — a single long
+    # airline observation (30k+ tokens) then builds an O(L^2) attention matrix
+    # and OOMs (observed: 50GB alloc for a 0.6B model). 8192 tokens is ample for
+    # a coherence embedding and makes both embedders behave identically.
+    try:
+        if model.max_seq_length is None or model.max_seq_length > 8192:
+            model.max_seq_length = 8192
+    except Exception:
+        pass
 
     sims = load_sims(args.sim_file)
     if args.max_trajs:
@@ -119,7 +129,7 @@ def main():
         traj_id = sim.get("id", sim.get("task_id", ti))
 
         # ---- collect step texts -------------------------------------------
-        acts, obss, roles = [], [], []
+        acts, obss, roles, is_tool_turn = [], [], [], []
         for m in msgs:
             role = m.get("role", "")
             text = msg_text(m)
@@ -136,6 +146,17 @@ def main():
             roles.append(actor)
             acts.append(text)
             obss.append(obs)
+            # A turn is a "tool turn" if the MESSAGE OBJECT carries a structured
+            # tool_calls / function_call field. Reading acts[t] text misses these
+            # entirely (tau2 stores the call as structured data, not in content),
+            # which is why the regex version flagged zero in telecom despite 506
+            # user tool-calls. This is the field that matters for the D_o^U split.
+            has_tc = bool(m.get("tool_calls") or m.get("function_call")
+                          or (isinstance(m.get("content"), list)
+                              and any(isinstance(b, dict)
+                                      and b.get("type") in ("tool_use", "tool_call")
+                                      for b in m["content"])))
+            is_tool_turn.append(has_tc)
 
         # attach each tool observation to the agent turn that caused it
         obs_for_step = [""] * len(acts)
@@ -197,8 +218,7 @@ def main():
                 d_a_sem=d_a_sem, d_a_lex=d_a_lex, d_a_gated=d_a_gated,
                 d_oA=d_oA, d_oA_calibrated=d_oA_cal, d_oU=d_oU,
                 # telecom split: tool-emitting user turns break D_o^U's definition
-                user_is_tool_turn=int(roles[t] == "user" and bool(
-                    re.search(r'"?(tool_calls|function|action)"?\s*[:=]', acts[t]))),
+                user_is_tool_turn=int(roles[t] == "user" and is_tool_turn[t]),
                 label_fail=label,
             ))
 

@@ -38,6 +38,11 @@
 #SBATCH --time=8:00:00
 #SBATCH --output=/dl_scratch2/ege/ender/TRACER-Reproduced/logs/ablate-%j.out
 #SBATCH --error=/dl_scratch2/ege/ender/TRACER-Reproduced/logs/ablate-%j.err
+# NOTE: these two paths are ABSOLUTE and slurm does NOT create the directory.
+#       If logs/ is missing or the path is stale, the job dies at submit with
+#       NO log file and no error — indistinguishable from "nothing happened".
+#       `mkdir -p /dl_scratch2/ege/ender/TRACER-Reproduced/logs` first, and
+#       update BOTH lines if the project directory is ever renamed again.
 
 set -uo pipefail
 
@@ -56,6 +61,11 @@ SIM_DIR="${SIM_DIR:-$BASE/data/simulations}"
 OUT="${OUT:-$BASE/ablations}"
 SCRIPTS="${SCRIPTS:-$BASE/scripts}"
 SIM_TAG="${SIM_TAG:-50runs}"          # file stem suffix; set 20runs1 etc. if needed
+# which embedder passes to run in the signals stage:
+#   all (default) = bge-m3 baseline + qwen3 + verbalized
+#   bgem3         = bge-m3 baseline + verbalized only
+#   qwen3         = qwen3 baseline only (use to backfill a single failed pass)
+SIGNALS_ONLY="${SIGNALS_ONLY:-all}"
 PREFLIGHT_ONLY="${PREFLIGHT_ONLY:-0}"
 
 # ---------------- node-specific setup ----------------
@@ -133,7 +143,7 @@ if [ "$STAGE" = "precision" ]; then
   fi
 fi
 
-echo "=== ABLATE: node=${NODE} stage=${STAGE} size=${SIZE} domains=${DOMAINS[*]} ==="
+echo "=== ABLATE: node=${NODE} stage=${STAGE} size=${SIZE} domains=${DOMAINS[*]} signals_only=${SIGNALS_ONLY} ==="
 
 # ---------------- conda env ----------------
 source ~/miniconda3/etc/profile.d/conda.sh
@@ -164,6 +174,7 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export LITELLM_LOG=CRITICAL
 export TOKENIZERS_PARALLELISM=false
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True   # ease embedder fragmentation
 
 # model cache check — HF_HUB_OFFLINE means a missing repo fails at load, not now
 check_cached() {
@@ -261,20 +272,26 @@ if [ "$STAGE" = "signals" ]; then
     # rather than to a formula mismatch between this script and the pipeline.
     # Also emits d_oA_calibrated (G4), which is a post-hoc transform of these
     # same embeddings and therefore costs no extra pass.
-    echo "[G2/G4] ${CELL}: ${EMB_BASE} (baseline + calibrated gap)"
-    python "$SCRIPTS/recompute_signals.py" \
-      --sim-file "$SIM" --cell "$CELL" --embed-model "$EMB_BASE" \
-      --variant baseline --out "$OUT/embed_${CELL}_bgem3_baseline.csv" || RC=1
+    if [ "$SIGNALS_ONLY" = "all" ] || [ "$SIGNALS_ONLY" = "bgem3" ]; then
+      echo "[G2/G4] ${CELL}: ${EMB_BASE} (baseline + calibrated gap)"
+      python "$SCRIPTS/recompute_signals.py" \
+        --sim-file "$SIM" --cell "$CELL" --embed-model "$EMB_BASE" \
+        --variant baseline --out "$OUT/embed_${CELL}_bgem3_baseline.csv" || RC=1
+    fi
 
-    echo "[G2]    ${CELL}: ${EMB_ALT}"
-    python "$SCRIPTS/recompute_signals.py" \
-      --sim-file "$SIM" --cell "$CELL" --embed-model "$EMB_ALT" \
-      --variant baseline --out "$OUT/embed_${CELL}_qwen3emb_baseline.csv" || RC=1
+    if [ "$SIGNALS_ONLY" = "all" ] || [ "$SIGNALS_ONLY" = "qwen3" ]; then
+      echo "[G2]    ${CELL}: ${EMB_ALT}"
+      python "$SCRIPTS/recompute_signals.py" \
+        --sim-file "$SIM" --cell "$CELL" --embed-model "$EMB_ALT" \
+        --variant baseline --out "$OUT/embed_${CELL}_qwen3emb_baseline.csv" || RC=1
+    fi
 
-    echo "[G3]    ${CELL}: verbalized observations (${EMB_BASE})"
-    python "$SCRIPTS/recompute_signals.py" \
-      --sim-file "$SIM" --cell "$CELL" --embed-model "$EMB_BASE" \
-      --variant verbalized --out "$OUT/embed_${CELL}_bgem3_verbalized.csv" || RC=1
+    if [ "$SIGNALS_ONLY" = "all" ] || [ "$SIGNALS_ONLY" = "bgem3" ]; then
+      echo "[G3]    ${CELL}: verbalized observations (${EMB_BASE})"
+      python "$SCRIPTS/recompute_signals.py" \
+        --sim-file "$SIM" --cell "$CELL" --embed-model "$EMB_BASE" \
+        --variant verbalized --out "$OUT/embed_${CELL}_bgem3_verbalized.csv" || RC=1
+    fi
   done
 fi
 
@@ -315,10 +332,16 @@ if [ "$STAGE" = "precision" ]; then
   # ---- PHASE 2: bf16 ----
   BF16_LOG="logs/ablate-vllm-bf16-${SLURM_JOB_ID}.log"
   echo "Starting vLLM SCORER ($BF16_MODEL) on GPU 0, port $PORT ..."
+  # prompt-logprob re-scoring materializes a [prompt_len x vocab] fp32 logits
+  # tensor; with vocab~152k a single long prompt spikes several GB. 0.92 util
+  # left the 14B run with <500MB free and the engine OOM'd after 80 rows. Lower
+  # the util for headroom, and cap the prefill batch so one scheduler step's
+  # logits tensor is bounded regardless of prompt length.
   vllm serve "$BF16_MODEL" \
     --served-model-name scorer --port "$PORT" \
     --dtype bfloat16 \
-    --gpu-memory-utilization 0.92 --max-model-len 32768 \
+    --gpu-memory-utilization 0.80 --max-model-len 32768 \
+    --max-num-batched-tokens 8192 --max-num-seqs 8 \
     > "$BF16_LOG" 2>&1 &
   BF16_PID=$!
 
@@ -346,3 +369,17 @@ python "$SCRIPTS/summarize_ablations.py" --dir "$OUT" --cells "${CELLS[@]}" \
 echo "=== done: node=${NODE} stage=${STAGE} size=${SIZE} domains=${DOMAINS[*]} rc=${RC} ==="
 echo "Results in $OUT"
 ls -lh "$OUT" | tail -20
+
+# ---------------------------------------------------------------------------
+# WHY G1 RUNS ON 14B
+# The scorer has to be the model that produced the trajectories, so a bf16
+# scorer requires a cell of that size — and 14B is the only size with a cached
+# bf16 checkpoint. That is not a compromise: the statistic answering G1 is the
+# paired per-step Spearman between Int4 and bf16, computed over thousands of
+# steps, which is unaffected by the 6-12-success label problem in the 14B cells.
+# Read that line in the summary; ignore the AUROC columns for 14B. A correlation
+# of 0.95+ means precision is not rewriting surprisal, and the inversion is
+# behavioural. Re-running on 32B needs a ~62GB download and would answer the
+# same question.
+# ---------------------------------------------------------------------------
+

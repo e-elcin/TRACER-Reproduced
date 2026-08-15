@@ -23,8 +23,8 @@
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=128G
 #SBATCH --time=10:00:00
-#SBATCH --output=/dl_scratch2/ege/elcin/TRACER-Reproduced/logs/tracer-%j.out
-#SBATCH --error=/dl_scratch2/ege/elcin/TRACER-Reproduced/logs/tracer-%j.err
+#SBATCH --output=/dl_scratch2/ege/ender/TRACER-Reproduced/logs/tracer-%j.out
+#SBATCH --error=/dl_scratch2/ege/ender/TRACER-Reproduced/logs/tracer-%j.err
 
 set -uo pipefail
 
@@ -107,7 +107,7 @@ python -c "import litellm, sentence_transformers" 2>/dev/null || {
 }
 echo "env check OK: tau2 + litellm + sentence-transformers"
 
-cd /dl_scratch2/ege/elcin/TRACER-Reproduced
+cd /dl_scratch2/ege/ender/TRACER-Reproduced
 mkdir -p logs
 
 echo "=== GPUs allocated ==="
