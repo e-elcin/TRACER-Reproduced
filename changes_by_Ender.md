@@ -36,11 +36,11 @@ Fork of `sinatayebati/agent-tracer`, branched at `dba3de2`.
 
 * added the new `data/tau2/` output paths and unignored `results/`
 
-**scripts/run_smoke.slurm:**
+**scripts/slurms/run_smoke.slurm:**
 
 * small single-GPU job to validate the pipeline before spending grid GPU hours
 
-**scripts/run_grid.slurm:**
+**scripts/slurms/run_grid.slurm:**
 
 * runs the 3×3 grid (14B/32B/72B × retail/airline/telecom, 50 tasks)
 * loads judge and agent servers sequentially, since loading both saturates NFS and the 72B crawls
@@ -78,7 +78,7 @@ Fork of `sinatayebati/agent-tracer`, branched at `dba3de2`.
 
 * prints all ablation stats for the report in one pass
 
-**scripts/run_ablations_test.slurm:** (ablation-test)
+**scripts/slurms/run_ablations_test.slurm:** (ablation-test)
 
 * runs the ablation stages; re-scores cached trajectories only, no new rollouts
 * needs one GPU instead of two, since there is no judge to host
