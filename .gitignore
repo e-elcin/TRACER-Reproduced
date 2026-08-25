@@ -207,3 +207,7 @@ src/experiments/model_training/data/full-v1/*/data-*.arrow
 # Large JSONL training files
 src/experiments/model_training/data/train_full-v1.jsonl
 src/experiments/model_training/data/test_full-v1.jsonldata/tau2/simulations/
+
+ablations/
+diagnose_results/
+variant_results/
