@@ -103,7 +103,7 @@ def get_label(sim):
                     return 0 if float(v) >= 0.999 else 1
                 except (TypeError, ValueError):
                     continue
-    return np.nan
+    return float("nan")
 
 
 def msg_text(m):
