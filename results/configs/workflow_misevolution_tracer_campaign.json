@@ -1,0 +1,18 @@
+{
+  "campaign": "workflow_misevolution_trajectory_pilot_n32",
+  "model": "Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4",
+  "expected_prompts": 32,
+  "expected_runs_per_prompt": 10,
+  "rounds": [
+    {"round": 1, "expected_calls_per_run": 1, "collection_log": "logs/collect_trajectory_47791_0.log"},
+    {"round": 3, "expected_calls_per_run": 4, "collection_log": "logs/collect_trajectory_47791_1.log"},
+    {"round": 4, "expected_calls_per_run": 1, "collection_log": "logs/collect_trajectory_47791_2.log"},
+    {"round": 5, "expected_calls_per_run": 1, "collection_log": "logs/collect_trajectory_47791_3.log"},
+    {"round": 6, "expected_calls_per_run": 1, "collection_log": "logs/collect_trajectory_47791_4.log"},
+    {"round": 7, "expected_calls_per_run": 2, "collection_log": "logs/collect_trajectory_47791_5.log"},
+    {"round": 8, "expected_calls_per_run": 4, "collection_log": "logs/collect_trajectory_47791_6.log"},
+    {"round": 9, "expected_calls_per_run": 1, "collection_log": "logs/collect_trajectory_47791_7.log"},
+    {"round": 10, "expected_calls_per_run": 1, "collection_log": "logs/collect_trajectory_47791_8.log"},
+    {"round": 11, "expected_calls_per_run": 4, "collection_log": "logs/collect_trajectory_47791_9.log"}
+  ]
+}

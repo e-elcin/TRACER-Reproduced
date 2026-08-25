@@ -27,11 +27,6 @@ import re
 import string
 import sys
 
-import numpy as np
-import pandas as pd
-import requests
-from transformers import AutoTokenizer
-
 # Small built-in stopword set — avoids an nltk download under HF_HUB_OFFLINE.
 STOPWORDS = set("""
 a about above after again against all am an and any are aren't as at be because been
@@ -124,6 +119,8 @@ def msg_text(m):
 
 def score_span(api_base, served_name, prompt_text, full_text, n_prefix_tokens, timeout=180):
     """Return (tokens, logprobs) for the response span via echo re-scoring."""
+    import requests
+
     r = requests.post(
         f"{api_base}/completions",
         json={
@@ -158,6 +155,12 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--max-trajs", type=int, default=0, help="0 = all; use a small number for a smoke test")
     args = ap.parse_args()
+
+    # Keep heavyweight imports after argument parsing so --help remains fast on
+    # network filesystems with large conda environments.
+    import numpy as np
+    import pandas as pd
+    from transformers import AutoTokenizer
 
     tok = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
     sims = load_sims(args.sim_file)
